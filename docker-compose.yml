@@ -1,0 +1,11 @@
+version: '3'
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./faces:/app/faces
+      - ./encodings:/app/encodings
+      - ./weights:/app/weights
+      - ./models:/app/models

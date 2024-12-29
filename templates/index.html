@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Test</title>
+</head>
+<body>
+    <h1>Face Recognition Test</h1>
+    
+    <video id="webcam" width="640" height="480" autoplay></video>
+    <div id="output"></div>
+
+    <button id="connectButton">Connect WebSocket</button>
+
+    <script>
+        const webcam = document.getElementById('webcam');
+        const outputDiv = document.getElementById('output');
+        const connectButton = document.getElementById('connectButton');
+        let websocket;
+
+        function startWebSocket() {
+            websocket = new WebSocket('ws://select-strictly-bat.ngrok-free.app/ws'); // Update the WebSocket endpoint
+
+            websocket.onmessage = (event) => {
+                console.log('Received data:', event.data);
+
+                // Log received data, regardless of its type
+                console.log('Received data:', event.data);
+
+                // Check if the received data is an image (assuming it's base64-encoded JPEG)
+                if (event.data.startsWith('data:image/jpeg;base64,')) {
+                    const imgSrc = event.data;
+
+                    const imgElement = document.createElement('img');
+                    imgElement.src = imgSrc;
+
+                    // Clear previous output
+                    outputDiv.innerHTML = '';
+
+                    // Append the new image to the output
+                    outputDiv.appendChild(imgElement);
+                } else {
+                    // If it's not an image, log it to the console
+                    console.log('Received non-image data:', event.data);
+                }
+            };
+
+            websocket.onopen = (event) => {
+                console.log('WebSocket connection opened:', event);
+            };
+
+            websocket.onclose = (event) => {
+                console.log('WebSocket connection closed:', event);
+            };
+
+            websocket.onerror = (event) => {
+                console.error('WebSocket error:', event);
+            };
+        }
+
+        connectButton.addEventListener('click', startWebSocket);
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                webcam.srcObject = stream;
+
+                const mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (websocket && websocket.readyState === WebSocket.OPEN) {
+                        websocket.send(event.data);
+                    }
+                };
+
+                mediaRecorder.start();
+
+                mediaRecorder.onstop = () => {
+                    if (websocket) {
+                        websocket.close();
+                    }
+                };
+            })
+            .catch((error) => {
+                console.error('Error accessing webcam:', error);
+            });
+    </script>
+</body>
+</html>
